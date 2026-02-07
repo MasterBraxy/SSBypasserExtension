@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Study Stark Bypasser",
+  "version": "1.0",
+  "permissions": ["scripting", "activeTab", "storage", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Start / Stop Automation"
+  }
+}
