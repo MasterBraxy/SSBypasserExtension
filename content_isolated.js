@@ -16,8 +16,35 @@
         if (Date.now() - s > t) {
           clearInterval(i); rej("timeout " + sel);
         }
-      }, 300);
+      }, 120);
     });
+
+  const sendMessage = (payload, timeout = 5000) =>
+    new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error("Message timeout: " + payload.type));
+      }, timeout);
+
+      chrome.runtime.sendMessage(payload, (response) => {
+        clearTimeout(timer);
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+          return;
+        }
+        resolve(response);
+      });
+    });
+
+  const resetTimer = async () => {
+    const started = performance.now();
+    const resp = await sendMessage({ type: "RESET_TIMER" }, 8000);
+    if (!resp?.ok) {
+      throw new Error(resp?.error || "RESET_TIMER_FAILED");
+    }
+    const duration = resp.duration ?? performance.now() - started;
+    console.log(`[Automation] Timer reset ack in ${Math.round(duration)}ms`);
+    return duration;
+  };
 
   const state = await getStore({ running: false, step: 1, cycle: 0 });
   if (!state.running) return;
@@ -55,10 +82,9 @@
 
     if (cycle >= 5) {
       console.log("[Automation] Final page - resetting timer");
-      
+
       // 🔥 RESET TIMER ON FINAL PAGE
-      chrome.runtime.sendMessage({ type: "RESET_TIMER" });
-      await sleep(2000);
+      await resetTimer();
       
       const finalLink = document.getElementById("final-get-link");
       if (finalLink) finalLink.click();
@@ -72,8 +98,7 @@
       console.log(`[Automation] Page 5/5 - Reset time → Verify only`);
 
       // 🔥 RESET TIMER
-      chrome.runtime.sendMessage({ type: "RESET_TIMER" });
-      await sleep(5000); // Wait longer for timer reset
+      await resetTimer();
 
       // Click Verify button directly (no Continue button on page 5)
       console.log("[Automation] Looking for Verify button (#verifyBtn)...");
@@ -90,8 +115,7 @@
     console.log(`[Automation] Page ${cycle + 1}/5 - Reset time → Continue → Verify`);
 
     // 🔥 RESET TIMER FIRST
-    chrome.runtime.sendMessage({ type: "RESET_TIMER" });
-    await sleep(5000); // Wait longer for timer reset
+    await resetTimer();
 
     // Click Continue (if it exists)
     try {

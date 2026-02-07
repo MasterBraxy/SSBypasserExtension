@@ -143,8 +143,25 @@ chrome.tabs.onUpdated.addListener(async (tabId, info) => {
 });
 
 // ---- messages from content ----
-chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (msg.type === "RESET_TIMER" && sender.tab?.id) {
-    resetTimeCount(sender.tab.id);
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type !== "RESET_TIMER") return;
+
+  const tabId = sender.tab?.id || msg.tabId;
+  if (!tabId) {
+    sendResponse?.({ ok: false, error: "NO_TAB_ID" });
+    return;
   }
+
+  (async () => {
+    const started = Date.now();
+    try {
+      await resetTimeCount(tabId);
+      sendResponse?.({ ok: true, duration: Date.now() - started });
+    } catch (error) {
+      console.error("[BG] resetTimeCount error", error);
+      sendResponse?.({ ok: false, error: error?.message || "RESET_FAILED" });
+    }
+  })();
+
+  return true; // keep message channel open for async response
 });
