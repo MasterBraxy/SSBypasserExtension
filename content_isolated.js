@@ -53,6 +53,8 @@
 
   console.log("[Automation] injected:", location.href, state);
 
+  const step4Url = "https://stark.vidyarays.com/";
+
   // STEP 1 — server + generate
   if (step === 1) {
     const server = document.querySelector(".server");
@@ -62,7 +64,10 @@
       server.click();
       await sleep(800);
       gen.click();
-      await setStore({ step: 2 });
+      await sleep(500);
+      await setStore({ step: 4, cycle: 0 });
+      // Jump straight to the first Step 4 page after triggering generation
+      window.location.href = step4Url;
       return;
     }
   }
