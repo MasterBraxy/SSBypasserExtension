@@ -66,7 +66,7 @@
       gen.click();
       await sleep(500);
       await setStore({ step: 4, cycle: 0 });
-      // Jump straight to the first Step 4 page after triggering generation
+      console.log("[Automation] Direct-jumping to Step 4 root page");
       window.location.href = step4Url;
       return;
     }
@@ -74,6 +74,11 @@
 
   // STEP 2 — timer redirect page (do nothing)
   if (step === 2) {
+    if (location.href.startsWith(step4Url)) {
+      console.log("[Automation] Already on Step 4 domain, updating state");
+      await setStore({ step: 4, cycle: 0 });
+      return;
+    }
     const a = document.querySelector("a.zReHs");
     if (a) {
       a.click();
@@ -92,8 +97,11 @@
       await resetTimer();
       
       const finalLink = document.getElementById("final-get-link");
+
+      // Stop automation BEFORE triggering navigation to avoid re-entry
+      await setStore({ running: false, step: 1, cycle: 0 });
+
       if (finalLink) finalLink.click();
-      await setStore({ running: false });
       console.log("[Automation] DONE");
       return;
     }
