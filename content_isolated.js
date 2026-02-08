@@ -112,7 +112,8 @@
       verifyBtn.click();
       await sleep(1000);
 
-      await setStore({ cycle: cycle + 1 });
+      await setStore({ running: false, step: 1, cycle: 0 });
+      console.log("[Automation] Stopping after final verify - manual steps handled by user");
       return;
     }
 
