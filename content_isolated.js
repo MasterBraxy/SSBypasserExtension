@@ -53,6 +53,25 @@
 
   console.log("[Automation] injected:", location.href, state);
 
+  // Stop future injections when user manually clicks the final link
+  if (!window.__ssbFinalHooked) {
+    window.__ssbFinalHooked = true;
+    document.addEventListener(
+      "click",
+      async (evt) => {
+        const target = evt.target?.closest("#final-get-link, .final-get-link");
+        if (!target) return;
+        try {
+          await setStore({ running: false, step: 1, cycle: 0, tabId: null });
+          console.log("[Automation] Final link clicked manually - automation disarmed");
+        } catch (hookErr) {
+          console.error("[Automation] Final link hook failed", hookErr);
+        }
+      },
+      true
+    );
+  }
+
   const step4Url = "https://stark.vidyarays.com/";
 
   // STEP 1 — server + generate
@@ -99,7 +118,7 @@
       const finalLink = document.getElementById("final-get-link");
 
       // Stop automation BEFORE triggering navigation to avoid re-entry
-      await setStore({ running: false, step: 1, cycle: 0 });
+      await setStore({ running: false, step: 1, cycle: 0, tabId: null });
 
       if (finalLink) finalLink.click();
       console.log("[Automation] DONE");
@@ -120,7 +139,7 @@
       verifyBtn.click();
       await sleep(1000);
 
-      await setStore({ running: false, step: 1, cycle: 0 });
+      await setStore({ running: false, step: 1, cycle: 0, tabId: null });
       console.log("[Automation] Stopping after final verify - manual steps handled by user");
       return;
     }
@@ -156,7 +175,7 @@
       console.error("[Automation] ERROR on cycle", cycle, ":", err);
       console.log("[Automation] Available buttons:", 
         document.querySelectorAll("button, a, [id*='continue'], [id*='verify']"));
-      await setStore({ running: false }); // Stop automation on error
+      await setStore({ running: false, tabId: null }); // Stop automation on error
     }
     return;
   }
