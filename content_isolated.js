@@ -53,26 +53,15 @@
 
   console.log("[Automation] injected:", location.href, state);
 
-  // Stop future injections when user manually clicks the final link
-  if (!window.__ssbFinalHooked) {
-    window.__ssbFinalHooked = true;
-    document.addEventListener(
-      "click",
-      async (evt) => {
-        const target = evt.target?.closest("#final-get-link, .final-get-link");
-        if (!target) return;
-        try {
-          await setStore({ running: false, step: 1, cycle: 0, tabId: null });
-          console.log("[Automation] Final link clicked manually - automation disarmed");
-        } catch (hookErr) {
-          console.error("[Automation] Final link hook failed", hookErr);
-        }
-      },
-      true
-    );
-  }
-
   const step4Url = "https://stark.vidyarays.com/";
+  const prolinkUrl = "https://stark.vidyarays.com/prolink.php?id=oLVxwuFfBVs6Lbz65EhR5jBucjBRTlozeVp1ekZVV1dXc0ZCeUVBK1U2TXovQjZIVTZBWkR3MDNrWDFhdk5sSWh0UktGeHFwVWxudHllOWk";
+
+  // Redirect any generated prolink straight back to the Vidyarays home page
+  if (location.href.startsWith(prolinkUrl)) {
+    console.log("[Automation] Prolink detected, redirecting to Vidyarays");
+    window.location.replace(step4Url);
+    return;
+  }
 
   // STEP 1 — server + generate
   if (step === 1) {
@@ -85,7 +74,7 @@
       gen.click();
       await sleep(500);
       await setStore({ step: 4, cycle: 0 });
-      console.log("[Automation] Direct-jumping to Step 4 root page");
+      // Jump straight to the first Step 4 page after triggering generation
       window.location.href = step4Url;
       return;
     }
@@ -93,11 +82,6 @@
 
   // STEP 2 — timer redirect page (do nothing)
   if (step === 2) {
-    if (location.href.startsWith(step4Url)) {
-      console.log("[Automation] Already on Step 4 domain, updating state");
-      await setStore({ step: 4, cycle: 0 });
-      return;
-    }
     const a = document.querySelector("a.zReHs");
     if (a) {
       a.click();
@@ -116,11 +100,8 @@
       await resetTimer();
       
       const finalLink = document.getElementById("final-get-link");
-
-      // Stop automation BEFORE triggering navigation to avoid re-entry
-      await setStore({ running: false, step: 1, cycle: 0, tabId: null });
-
       if (finalLink) finalLink.click();
+      await setStore({ running: false });
       console.log("[Automation] DONE");
       return;
     }
@@ -139,8 +120,7 @@
       verifyBtn.click();
       await sleep(1000);
 
-      await setStore({ running: false, step: 1, cycle: 0, tabId: null });
-      console.log("[Automation] Stopping after final verify - manual steps handled by user");
+      await setStore({ cycle: cycle + 1 });
       return;
     }
 
@@ -175,7 +155,7 @@
       console.error("[Automation] ERROR on cycle", cycle, ":", err);
       console.log("[Automation] Available buttons:", 
         document.querySelectorAll("button, a, [id*='continue'], [id*='verify']"));
-      await setStore({ running: false, tabId: null }); // Stop automation on error
+      await setStore({ running: false }); // Stop automation on error
     }
     return;
   }
