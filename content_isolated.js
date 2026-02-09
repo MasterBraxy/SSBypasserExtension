@@ -58,7 +58,8 @@
 
   // Redirect any generated prolink straight back to the Vidyarays home page
   if (location.href.startsWith(prolinkUrl)) {
-    console.log("[Automation] Prolink detected, redirecting to Vidyarays");
+    console.log("[Automation] Prolink detected, waiting before redirecting to Vidyarays");
+    await sleep(4000); // allow destination to register the visit
     window.location.replace(step4Url);
     return;
   }
@@ -72,10 +73,13 @@
       server.click();
       await sleep(800);
       gen.click();
-      await sleep(500);
+      console.log("[Automation] Generate clicked, waiting for site to load...");
+      await sleep(4000);
       await setStore({ step: 4, cycle: 0 });
       // Jump straight to the first Step 4 page after triggering generation
-      window.location.href = step4Url;
+      if (!location.href.startsWith(step4Url)) {
+        window.location.href = step4Url;
+      }
       return;
     }
   }

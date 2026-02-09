@@ -6,9 +6,24 @@ const getStore = (keys) =>
 const setStore = (obj) =>
   new Promise((res) => chrome.storage.local.set(obj, res));
 
+const tabExists = async (tabId) => {
+  if (typeof tabId !== "number") return false;
+  try {
+    await chrome.tabs.get(tabId);
+    return true;
+  } catch (err) {
+    return false;
+  }
+};
+
 // ---- inject content script ----
 async function inject(tabId) {
   try {
+    if (!(await tabExists(tabId))) {
+      console.warn(`[BG] Skip inject - tab ${tabId} missing`);
+      await setStore({ running: false, tabId: null });
+      return;
+    }
     // Small delay to ensure frame is ready
     await new Promise(r => setTimeout(r, 500));
     await chrome.scripting.executeScript({
@@ -27,6 +42,11 @@ async function inject(tabId) {
 // ---- RESET timer in MAIN world (CSP-safe) ----
 async function resetTimeCount(tabId) {
   try {
+    if (!(await tabExists(tabId))) {
+      console.warn(`[BG] Skip resetTimeCount - tab ${tabId} missing`);
+      await setStore({ running: false, tabId: null });
+      return;
+    }
     await chrome.scripting.executeScript({
       target: { tabId },
       world: "MAIN",
@@ -123,7 +143,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     await inject(tab.id);
     console.log("[BG] Automation STARTED");
   } else {
-    await setStore({ running: false });
+    await setStore({ running: false, tabId: null });
     console.log("[BG] Automation STOPPED");
   }
 });
@@ -131,6 +151,16 @@ chrome.action.onClicked.addListener(async (tab) => {
 // ---- reinject after every redirect ----
 chrome.tabs.onUpdated.addListener(async (tabId, info) => {
   if (info.status !== "complete") return;
+
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  const { running, tabId: tracked } =
+    await getStore({ running: false, tabId: null });
+
+  if (running && tracked === tabId) {
+    await setStore({ running: false, tabId: null });
+    console.warn(`[BG] Automation stopped - tracked tab ${tabId} closed`);
+  }
+});
 
   const { running, tabId: storedTab } =
     await getStore({ running: false, tabId: null });
