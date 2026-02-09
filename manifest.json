@@ -1,13 +1,21 @@
 {
   "manifest_version": 3,
-  "name": "Study Stark Bypasser",
-  "version": "1.0",
-  "permissions": ["scripting", "activeTab", "storage", "tabs"],
-  "host_permissions": ["<all_urls>"],
+  "name": "Study Stark Automator",
+  "description": "Automates the Stark Vidyarays verification loop end-to-end.",
+  "version": "2.1.0",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": [
+    "https://studystark.in/*",
+    "https://stark.vidyarays.com/*",
+    "https://*.vidyarays.com/*",
+    "https://studystark.com/*",
+    "https://*.studystark.com/*",
+    "https://*.studystark.in/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Start / Stop Automation"
+    "default_title": "Study Stark Automator"
   }
 }
